@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>plugin</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.leedotype.LDGlobalBackground</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>LD Global Background</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string> <!-- 1.0 -->
+	<key>CFBundleVersion</key>
+	<string>1.0</string> <!-- 123 -->
+	<key>productReleaseNotes</key>
+	<string>Updated to support Glyphs 3 and Apple silicon</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright, Leedotype Co., Ltd., 2024</string>
+	<key>NSPrincipalClass</key>
+	<string>LDGlobalBackground</string>
+	<key>PyMainFileNames</key>
+	<array>
+		<string>plugin.py</string>
+	</array>
+</dict>
+</plist>
