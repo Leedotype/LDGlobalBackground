@@ -16,28 +16,71 @@ from __future__ import division, print_function, unicode_literals
 import objc
 from GlyphsApp import *
 from GlyphsApp.plugins import *
+from vanilla import *
 
 class LDGlobalBackground(ReporterPlugin):
 
 	@objc.python_method
 	def settings(self):
-		self.menuName = Glyphs.localize({
-			'en': 'My Plugin',
-			'de': 'Mein Plugin',
-			'fr': 'Ma extension',
-			'es': 'Mi plugin',
-			'pt': 'Meu plug-in',
-			})
-		self.generalContextMenus = [{
-			'name': Glyphs.localize({
-				'en': 'Do something',
-				'de': 'Tu etwas',
-				'fr': 'Faire quelque chose',
-				'es': 'Hacer algo',
-				'pt': 'Faça alguma coisa',
-				}), 
-			'action': self.doSomething_
-			}]
+		try:
+			width = 180
+
+			stroke_slider_height = 39
+
+			self.stroke_width = 30
+
+			self.stroke_slider = Window((width, stroke_slider_height))
+			self.stroke_slider.group = Group((0, 0, width, stroke_slider_height))
+			self.stroke_slider.group.title = TextBox((18, 2, -18, 16), "Stroke Weight", sizeStyle="small")
+			self.stroke_slider.group.slider = Slider(
+				(20, 22, 98, 11), 
+				minValue=0,
+				maxValue=100,
+				value=self.stroke_width,
+				sizeStyle="small", 
+				callback=self.stroke_slider_callback)
+
+			self.stroke_slider.group.edit_text = EditText(
+				(126, 20, 28, 19),
+				text=str(self.stroke_width),
+				sizeStyle="small",
+				callback=self.stroke_edit_text_callback
+			)
+
+
+			self.menuName = Glyphs.localize({
+				'en': 'LD Global Background',
+				})
+			self.generalContextMenus = [{
+				'name': Glyphs.localize({
+					'en': 'Do something',
+					}), 
+				'action': self.doSomething_
+				},
+				{
+					"view": self.stroke_slider.group.getNSView()
+				}
+				]
+		except Exception as e:
+			print(e)
+
+	@objc.python_method
+	def stroke_edit_text_callback(self, sender):
+		
+		value = sender.get()
+
+		# parse value as integer to variable named num, if failed set num to 30
+		try:
+			num = int(value)
+		except:
+			num = 30
+		
+		print("edit text value:", num)
+		
+	# Prints the slider’s value
+	@objc.python_method
+	def stroke_slider_callback(self, sender):
+		print('Slider value:', sender.get())
 
 	@objc.python_method
 	def foreground(self, layer):
