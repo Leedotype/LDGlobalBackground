@@ -117,7 +117,10 @@ class LDGlobalBackground(ReporterPlugin):
                     borderLayer.setCornerRadius_(BUTTON_SIZE / 2)
 
                     borderLayer.setBorderWidth_(BORDER_WIDTH)
-                    borderLayer.setBorderColor_(NSColor.whiteColor().CGColor())
+                    if i == self.color:
+                        borderLayer.setBorderColor_(WHITE.CGColor())
+                    else:
+                        borderLayer.setBorderColor_(CLEAR.CGColor())
 
                 b.setBordered_(False)
 
