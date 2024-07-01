@@ -17,8 +17,23 @@ import objc
 from GlyphsApp import *
 from GlyphsApp.plugins import *
 from vanilla import *
+from Foundation import CALayer
 
-DEFAULTS_KEY = "com.leedotype.LDGlobalBackground.glyph"
+GLYPH_KEY = "com.leedotype.LDGlobalBackground.glyph"
+WIDTH_KEY = "com.leedotype.LDGlobalBackground.width"
+COLOR_KEY = "com.leedotype.LDGlobalBackground.color"
+
+WHITE = NSColor.whiteColor()
+CLEAR = NSColor.clearColor()
+
+defaults = Glyphs.defaults
+
+
+MAX_VALUE = 300
+
+BORDER_WIDTH = 3
+
+BUTTON_SIZE = 13 + 2 * BORDER_WIDTH
 
 
 def clamp(num, min, max):
@@ -38,7 +53,101 @@ class LDGlobalBackground(ReporterPlugin):
 
             stroke_slider_height = 39
 
-            self.stroke_width = 30
+            self.color = defaults.get(COLOR_KEY, 11)
+
+            self.stroke_width = defaults.get(WIDTH_KEY, 30)
+
+            self.colors = [
+                NSColor.redColor(),
+                NSColor.orangeColor(),
+                NSColor.brownColor(),
+                NSColor.yellowColor(),
+                NSColor.greenColor(),
+                NSColor.systemGreenColor(),
+                NSColor.blueColor(),
+                NSColor.systemBlueColor(),
+                NSColor.purpleColor(),
+                NSColor.magentaColor(),
+                NSColor.lightGrayColor(),
+                NSColor.darkGrayColor(),
+            ]
+
+            self.color_buttons = [
+                SquareButton(
+                    (0, 0, 14, 14),
+                    " ",
+                    sizeStyle="mini",
+                    callback=self.colorHandlerBuilder(i),
+                )
+                for i in range(len(self.colors))
+            ]
+
+            for i, button in enumerate(self.color_buttons):
+                b = button.getNSButton()
+
+                b.setTranslatesAutoresizingMaskIntoConstraints_(False)
+
+                b.heightAnchor().constraintEqualToConstant_(BUTTON_SIZE).setActive_(
+                    True
+                )
+                b.widthAnchor().constraintEqualToConstant_(BUTTON_SIZE).setActive_(True)
+
+                b.setWantsLayer_(True)
+                l = button.getNSButton().layer()
+
+                if l is not None:
+                    l.setFrame_(((0, 0), (BUTTON_SIZE, BUTTON_SIZE)))
+                    backgroundLayer = CALayer.alloc().init()
+                    l.insertSublayer_atIndex_(backgroundLayer, 0)
+                    backgroundLayer.setFrame_(
+                        (
+                            (BORDER_WIDTH, BORDER_WIDTH),
+                            (
+                                BUTTON_SIZE - 2 * BORDER_WIDTH,
+                                BUTTON_SIZE - 2 * BORDER_WIDTH,
+                            ),
+                        )
+                    )
+                    backgroundLayer.setCornerRadius_(BUTTON_SIZE / 2 - BORDER_WIDTH)
+                    backgroundLayer.setBackgroundColor_(self.colors[i].CGColor())
+
+                    borderLayer = CALayer.alloc().init()
+                    l.insertSublayer_atIndex_(borderLayer, 0)
+                    borderLayer.setFrame_(((0, 0), (BUTTON_SIZE, BUTTON_SIZE)))
+                    borderLayer.setCornerRadius_(BUTTON_SIZE / 2)
+
+                    borderLayer.setBorderWidth_(BORDER_WIDTH)
+                    borderLayer.setBorderColor_(NSColor.whiteColor().CGColor())
+
+                b.setBordered_(False)
+
+            self.color_picker = Window((width, 48))
+            self.color_picker.group = Group((0, 0, width, 48))
+
+            self.color_picker.group.vertical_stack = VerticalStackView(
+                (0, 0, 0, 0),
+                views=[
+                    dict(
+                        view=HorizontalStackView(
+                            (0, 0, 0, 0),
+                            views=[
+                                dict(view=button) for button in self.color_buttons[:6]
+                            ],
+                            spacing=6,
+                        )
+                    ),
+                    dict(
+                        view=HorizontalStackView(
+                            (0, 0, 0, 0),
+                            views=[
+                                dict(view=button) for button in self.color_buttons[6:]
+                            ],
+                            spacing=6,
+                        )
+                    ),
+                ],
+                spacing=6,
+            )
 
             self.stroke_slider = Window((width, stroke_slider_height))
             self.stroke_slider.group = Group((0, 0, width, stroke_slider_height))
@@ -48,14 +157,14 @@ class LDGlobalBackground(ReporterPlugin):
             self.stroke_slider.group.slider = Slider(
                 (20, 22, 98, 11),
                 minValue=0,
-                maxValue=100,
+                maxValue=MAX_VALUE,
                 value=self.stroke_width,
                 sizeStyle="small",
                 callback=self.strokeSliderCallback_,
             )
 
             self.stroke_slider.group.edit_text = EditText(
-                (126, 20, 28, 19),
+                (126, 20, 32, 19),
                 text=str(self.stroke_width),
                 sizeStyle="small",
                 continuous=False,
@@ -77,9 +186,30 @@ class LDGlobalBackground(ReporterPlugin):
                     "action": self.setBackgroundGlyph_,
                 },
                 {"view": self.stroke_slider.group.getNSView()},
+                {"view": self.color_picker.group.getNSView()},
             ]
         except Exception as e:
             print(e)
+
+    @objc.python_method
+    def colorHandlerBuilder(self, tag):
+        def colorHandler_(sender):
+            print("button clicked", tag)
+            for i, button in enumerate(self.color_buttons):
+                l = button.getNSButton().layer()
+
+                borderLayer = l.sublayers()[0]
+                print(borderLayer, l.sublayers())
+                if i != tag:
+                    borderLayer.setBorderColor_(CLEAR.CGColor())
+                else:
+                    borderLayer.setBorderColor_(WHITE.CGColor())
+
+            self.color = tag
+            defaults[COLOR_KEY] = tag
+            Glyphs.redraw()
+
+        return colorHandler_
 
     def setBackgroundGlyph_(self, sender):
         layers = Glyphs.font.selectedLayers
@@ -91,14 +221,14 @@ class LDGlobalBackground(ReporterPlugin):
 
     @objc.python_method
     def setMemory(self, glyph_name):
-        Glyphs.defaults[DEFAULTS_KEY] = glyph_name
+        Glyphs.defaults[GLYPH_KEY] = glyph_name
 
     @objc.python_method
     def getMemory(self):
         try:
             current_layer_id = Glyphs.font.selectedFontMaster.id
 
-            glyph_name = Glyphs.defaults.get(DEFAULTS_KEY)
+            glyph_name = Glyphs.defaults.get(GLYPH_KEY)
 
             if glyph_name is None:
                 return None
@@ -118,11 +248,14 @@ class LDGlobalBackground(ReporterPlugin):
             return None
 
     @objc.python_method
-    def setValue(self, num):
-        num = clamp(num, 0, 100)
+    def setWidthValue(self, num):
+        num = clamp(num, 0, MAX_VALUE)
+        num = round(num)
         self.stroke_width = num
         self.stroke_slider.group.slider.set(num)
         self.stroke_slider.group.edit_text.set(str(num))
+        defaults[WIDTH_KEY] = num
+        Glyphs.redraw()
 
     def strokeEditTextCallback_(self, sender):
         value = sender.get()
@@ -131,24 +264,31 @@ class LDGlobalBackground(ReporterPlugin):
             num = int(value)
         except:
             num = 30
-        self.setValue(num)
+        self.setWidthValue(num)
 
     def strokeSliderCallback_(self, sender):
-        self.setValue(sender.get())
+        self.setWidthValue(sender.get())
 
     @objc.python_method
     def background(self, layer):
         try:
+            if self.stroke_width == 0:
+                return
+
             path = self.getMemory()
             if path is None:
                 return
 
             rect = NSMakeRect(0, -500, layer.width, 2000)
-            NSColor.blackColor().set()
+
+            self.colors[self.color].set()
 
             defaultWidth = NSBezierPath.defaultLineWidth()
-            responsiveWidth = (self.stroke_width / 100) * self.getScale() ** 0.9
-            width = max(defaultWidth, responsiveWidth)
+            responsiveWidth = (
+                float(self.stroke_width) / 100.0
+            ) * self.getScale() ** 0.9
+
+            width = max(defaultWidth / 2, responsiveWidth)
 
             path.setLineWidth_(width)
 
