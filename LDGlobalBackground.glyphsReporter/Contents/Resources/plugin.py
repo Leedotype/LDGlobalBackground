@@ -179,18 +179,31 @@ class LDGlobalBackground(ReporterPlugin):
                     "en": "LD Global Background",
                 }
             )
-            self.generalContextMenus = [
-                {
-                    "name": Glyphs.localize(
-                        {
-                            "en": "Do something",
-                        }
-                    ),
-                    "action": self.setBackgroundGlyph_,
-                },
-                {"view": self.stroke_slider.group.getNSView()},
-                {"view": self.color_picker.group.getNSView()},
-            ]
+
+            submenu = NSMenu.new()
+            # fill submenu
+
+            glyph_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                "Set Background", self.setBackgroundGlyph_, ""
+            )
+            glyph_item.setTarget_(self)
+
+            width_item = NSMenuItem.new()
+            width_item.setView_(self.stroke_slider.group.getNSView())
+
+            color_item = NSMenuItem.new()
+            color_item.setView_(self.color_picker.group.getNSView())
+
+            submenu.addItem_(glyph_item)
+            submenu.addItem_(width_item)
+            submenu.addItem_(color_item)
+
+            item = NSMenuItem.new()
+            item.setTitle_("LD Global Background")
+            item.setSubmenu_(submenu)
+
+            self.generalContextMenus = [{"menu": item}]
+
         except Exception as e:
             print(e)
 
