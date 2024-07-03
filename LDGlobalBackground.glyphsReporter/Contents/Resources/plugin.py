@@ -183,20 +183,20 @@ class LDGlobalBackground(ReporterPlugin):
             submenu = NSMenu.new()
             # fill submenu
 
-            glyph_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            self.glyph_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
                 "Set Background", self.setBackgroundGlyph_, ""
             )
-            glyph_item.setTarget_(self)
+            self.glyph_item.setTarget_(self)
 
-            width_item = NSMenuItem.new()
-            width_item.setView_(self.stroke_slider.group.getNSView())
+            self.width_item = NSMenuItem.new()
+            self.width_item.setView_(self.stroke_slider.group.getNSView())
 
-            color_item = NSMenuItem.new()
-            color_item.setView_(self.color_picker.group.getNSView())
+            self.color_item = NSMenuItem.new()
+            self.color_item.setView_(self.color_picker.group.getNSView())
 
-            submenu.addItem_(glyph_item)
-            submenu.addItem_(width_item)
-            submenu.addItem_(color_item)
+            submenu.addItem_(self.glyph_item)
+            submenu.addItem_(self.width_item)
+            submenu.addItem_(self.color_item)
 
             item = NSMenuItem.new()
             item.setTitle_("LD Global Background")
@@ -234,6 +234,7 @@ class LDGlobalBackground(ReporterPlugin):
         layer = Glyphs.font.selectedLayers[0]
         glyph = layer.parent
         self.setMemory(glyph.name)
+        Glyphs.redraw()
 
     @objc.python_method
     def setMemory(self, glyph_name):
@@ -291,6 +292,10 @@ class LDGlobalBackground(ReporterPlugin):
             if self.stroke_width == 0:
                 return
 
+            glyph_name = Glyphs.defaults.get(GLYPH_KEY)
+            if layer.parent.name == glyph_name:
+                return
+
             path = self.getMemory()
             if path is None:
                 return
@@ -318,13 +323,36 @@ class LDGlobalBackground(ReporterPlugin):
 
     @objc.python_method
     def inactiveLayerForeground(self, layer):
-        NSColor.selectedTextColor().set()
-        if layer.paths:
-            layer.bezierPath.fill()
-        if layer.components:
-            NSColor.findHighlightColor().set()
-            for component in layer.components:
-                component.bezierPath.fill()
+        try:
+            if self.stroke_width == 0:
+                return
+            glyph_name = Glyphs.defaults.get(GLYPH_KEY)
+            if layer.parent.name == glyph_name:
+                return
+            path = self.getMemory()
+            if path is None:
+                return
+
+            rect = NSMakeRect(0, -500, layer.width, 2000)
+
+            self.colors[self.color].set()
+
+            defaultWidth = NSBezierPath.defaultLineWidth()
+            responsiveWidth = (
+                float(self.stroke_width) / 100.0
+            ) * self.getScale() ** 0.9
+
+            width = max(defaultWidth / 2, responsiveWidth)
+
+            path.setLineWidth_(width)
+
+            NSBezierPath.clipRect_(rect)
+
+            path.addClip()
+
+            path.stroke()
+        except:
+            pass
 
     @objc.python_method
     def preview(self, layer):
@@ -342,34 +370,31 @@ class LDGlobalBackground(ReporterPlugin):
     @objc.python_method
     def conditionalContextMenus(self):
 
-        # Empty list of context menu items
-        contextMenus = []
-
         # Execute only if layers are actually selected
         if Glyphs.font.selectedLayers:
+            self.glyph_item.setEnabled_(True)
+
             layer = Glyphs.font.selectedLayers[0]
+            glyph = layer.parent
+            if glyph.unicode:
+                # unicode is in hex. Convert to int
+                unicode_value = int(glyph.unicode, 16)
 
-            # Exactly one object is selected and it’s an anchor
-            if len(layer.selection) == 1 and type(layer.selection[0]) == GSAnchor:
-
-                # Add context menu item
-                contextMenus.append(
+                # convert to string
+                glyph_name = chr(unicode_value)
+            else:
+                glyph_name = glyph.name
+            self.glyph_item.setTitle_(
+                Glyphs.localize(
                     {
-                        "name": Glyphs.localize(
-                            {
-                                "en": "Do something else",
-                                "de": "Tu etwas anderes",
-                                "fr": "Faire aute chose",
-                                "es": "Hacer algo más",
-                                "pt": "Faça outra coisa",
-                            }
-                        ),
-                        "action": self.doSomethingElse_,
+                        "en": f"Set {glyph_name} to Background",
+                        "ko": f"{glyph_name} 글자를 배경으로 사용하기",
                     }
                 )
+            )
 
-        # Return list of context menu items
-        return contextMenus
+        else:
+            self.glyph_item.setEnabled_(False)
 
     def doSomethingElse_(self, sender):
         print("Just did something else")
