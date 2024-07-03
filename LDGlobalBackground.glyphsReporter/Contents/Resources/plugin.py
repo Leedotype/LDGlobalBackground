@@ -29,7 +29,7 @@ CLEAR = NSColor.clearColor()
 defaults = Glyphs.defaults
 
 
-MAX_VALUE = 300
+MAX_VALUE = 150
 
 BORDER_WIDTH = 3
 
@@ -49,9 +49,9 @@ class LDGlobalBackground(ReporterPlugin):
     @objc.python_method
     def settings(self):
         try:
-            width = 180
+            width = 158
 
-            stroke_slider_height = 39
+            stroke_slider_height = 41
 
             self.color = defaults.get(COLOR_KEY, 11)
 
@@ -124,11 +124,17 @@ class LDGlobalBackground(ReporterPlugin):
 
                 b.setBordered_(False)
 
-            self.color_picker = Window((width, 48))
-            self.color_picker.group = Group((0, 0, width, 48))
+            self.color_picker = Window((width, 59))
+            self.color_picker.group = Group((0, 0, width, 59))
+
+            self.color_picker.group.title = TextBox(
+                (12, 2, -18, 16),
+                Glyphs.localize({"en": "Stroke Color", "ko": "선 색깔"}),
+                sizeStyle="small",
+            )
 
             self.color_picker.group.vertical_stack = VerticalStackView(
-                (0, 0, 0, 0),
+                (12, 20, -12, 39),
                 views=[
                     dict(
                         view=HorizontalStackView(
@@ -136,7 +142,7 @@ class LDGlobalBackground(ReporterPlugin):
                             views=[
                                 dict(view=button) for button in self.color_buttons[:6]
                             ],
-                            spacing=6,
+                            distribution="equalSpacing",
                         )
                     ),
                     dict(
@@ -145,33 +151,39 @@ class LDGlobalBackground(ReporterPlugin):
                             views=[
                                 dict(view=button) for button in self.color_buttons[6:]
                             ],
-                            spacing=6,
+                            distribution="equalSpacing",
                         )
                     ),
                 ],
-                spacing=6,
+                spacing=2,
+                alignment="leading",
             )
 
             self.stroke_slider = Window((width, stroke_slider_height))
             self.stroke_slider.group = Group((0, 0, width, stroke_slider_height))
             self.stroke_slider.group.title = TextBox(
-                (18, 2, -18, 16), "Stroke Weight", sizeStyle="small"
+                (12, 3, -60, 16),
+                Glyphs.localize({"en": "Stroke Width", "ko": "선 두께"}),
+                sizeStyle="small",
+            )
+            self.stroke_slider.group.edit_text = EditText(
+                (-58, 0, 32, 19),
+                text=str(self.stroke_width),
+                sizeStyle="small",
+                continuous=False,
+                callback=self.strokeEditTextCallback_,
+            )
+
+            self.stroke_slider.group.percent = TextBox(
+                (-26, 3, 16, 17), text="%", sizeStyle="small"
             )
             self.stroke_slider.group.slider = Slider(
-                (20, 22, 98, 11),
+                (12, 22, -12, 17),
                 minValue=0,
                 maxValue=MAX_VALUE,
                 value=self.stroke_width,
                 sizeStyle="small",
                 callback=self.strokeSliderCallback_,
-            )
-
-            self.stroke_slider.group.edit_text = EditText(
-                (126, 20, 32, 19),
-                text=str(self.stroke_width),
-                sizeStyle="small",
-                continuous=False,
-                callback=self.strokeEditTextCallback_,
             )
 
             self.menuName = Glyphs.localize(
@@ -195,7 +207,9 @@ class LDGlobalBackground(ReporterPlugin):
             self.color_item.setView_(self.color_picker.group.getNSView())
 
             submenu.addItem_(self.glyph_item)
+            submenu.addItem_(NSMenuItem.separatorItem())
             submenu.addItem_(self.width_item)
+            submenu.addItem_(NSMenuItem.separatorItem())
             submenu.addItem_(self.color_item)
 
             item = NSMenuItem.new()
@@ -307,7 +321,7 @@ class LDGlobalBackground(ReporterPlugin):
             defaultWidth = NSBezierPath.defaultLineWidth()
             responsiveWidth = (
                 float(self.stroke_width) / 100.0
-            ) * self.getScale() ** 0.9
+            ) * self.getScale() ** -0.9
 
             width = max(defaultWidth / 2, responsiveWidth)
 
@@ -340,7 +354,7 @@ class LDGlobalBackground(ReporterPlugin):
             defaultWidth = NSBezierPath.defaultLineWidth()
             responsiveWidth = (
                 float(self.stroke_width) / 100.0
-            ) * self.getScale() ** 0.9
+            ) * self.getScale() ** -0.9
 
             width = max(defaultWidth / 2, responsiveWidth)
 
@@ -387,11 +401,13 @@ class LDGlobalBackground(ReporterPlugin):
             self.glyph_item.setTitle_(
                 Glyphs.localize(
                     {
-                        "en": f"Set {glyph_name} to Background",
-                        "ko": f"{glyph_name} 글자를 배경으로 사용하기",
+                        "en": "Set '%s' to Background" % glyph_name,
+                        "ko": "'%s' 글자를 배경으로 사용하기" % glyph_name,
                     }
                 )
             )
+
+            print(self.glyph_item.view())
 
         else:
             self.glyph_item.setEnabled_(False)
