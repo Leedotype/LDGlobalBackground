@@ -163,7 +163,7 @@ class LDGlobalBackground(ReporterPlugin):
             self.stroke_slider.group = Group((0, 0, width, stroke_slider_height))
             self.stroke_slider.group.title = TextBox(
                 (12, 3, -60, 16),
-                Glyphs.localize({"en": "Stroke Width", "ko": "선 두께"}),
+                Glyphs.localize({"en": "Stroke Width", "ko": "선 굵기"}),
                 sizeStyle="small",
             )
             self.stroke_slider.group.edit_text = EditText(
