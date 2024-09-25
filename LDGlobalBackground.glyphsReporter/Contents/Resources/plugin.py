@@ -124,8 +124,8 @@ class LDGlobalBackground(ReporterPlugin):
 
                 b.setBordered_(False)
 
-            self.color_picker = Window((width, 59))
-            self.color_picker.group = Group((0, 0, width, 59))
+            self.color_picker = Window((width, 60))
+            self.color_picker.group = Group((0, 0, width, 60))
 
             self.color_picker.group.title = TextBox(
                 (12, 2, -18, 16),
@@ -134,7 +134,7 @@ class LDGlobalBackground(ReporterPlugin):
             )
 
             self.color_picker.group.vertical_stack = VerticalStackView(
-                (12, 20, -12, 39),
+                (12, 20, -12, 40),
                 views=[
                     dict(
                         view=HorizontalStackView(
